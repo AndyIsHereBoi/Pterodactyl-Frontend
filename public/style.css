@@ -2,3 +2,70 @@
 body {
   min-height: 100vh;
 }
+
+/* Dashboard sidebar */
+.dashboard-layout { display: flex; gap: 1rem; position: relative; }
+.sidebar {
+  width: 18rem;
+  position: fixed; /* locked to viewport */
+  left: 0; /* touch left side */
+  top: 0; /* full height from top */
+  height: 100vh; /* full viewport height */
+  overflow-y: auto;
+  z-index: 1000;
+  /* slightly darker, semi-opaque but not reverting active color behavior */
+  background: rgba(25, 25, 25, 0.96);
+  border-radius: 0; /* square edges */
+  box-shadow: none;
+}
+/* Remove inner padding and ensure full-width nav items */
+.sidebar .card-body { padding: 0; }
+.sidebar .nav { margin: 0; padding: 0; }
+.sidebar .nav-link { color: rgba(255,255,255,0.92); display:block; padding:0.75rem 1rem; border-radius:0; width:100%; box-sizing:border-box; transition: background-color 150ms ease, color 150ms ease; }
+.sidebar .nav-link:hover { background: rgba(255,255,255,0.05); color: white; }/* Pressed / active state slightly lighter than hover */
+.sidebar .nav-link:not(.active):active,
+.sidebar .nav-link:not(.active):focus-visible { background: rgba(255,255,255,0.08); color: white; }
+.sidebar .nav-link.active, .sidebar .nav-link:active {
+  background: #ff8c42; color: #2e2e2e; font-weight:600; border-radius:0;
+}
+
+.main-content { flex: 1; margin-left: calc(18rem + 1.5rem); }
+
+/* Mobile / small screens: sidebar becomes static again */
+@media (max-width: 992px) {
+  .dashboard-layout { flex-direction: column; }
+  .sidebar { position: relative; height: auto; min-width: auto; left: 0; top: 0; width: auto; border-radius:6px; box-shadow:none }
+  .main-content { margin-left: 0; }
+}
+
+/* Make icons slightly larger */
+.sidebar .bi { font-size: 1.1rem; }
+
+/* Server name style (centered) */
+.sidebar .fw-bold.text-body-secondary,
+.sidebar #sidebar-server-name,
+.sidebar .server-name { font-weight:700; color:#9aa0a6 !important; text-align:center; padding:0.5rem 1rem; }
+
+/* App title */
+.sidebar .app-title h3 { font-size: 1.25rem; font-weight:800; margin:0; padding:0.5rem 0; text-align:center; }
+
+/* Divider under servers (white) */
+.sidebar .sidebar-divider { border-color: rgba(255,255,255,1); width:100%; margin:0; }
+
+/* Ensure the Servers link shows active on page load */
+.sidebar .nav-link.active { box-shadow: inset 0 -9999px 0 0 #ff8c42; }
+
+/* Console / terminal styling */
+#console-output {
+  height: 40vh; /* fixed terminal height */
+  overflow: auto;
+  white-space: pre-wrap; /* preserve wrap and line breaks */
+  font-family: monospace;
+  font-size: 0.85rem;
+}
+#console-output pre { margin: 0 0 0.25rem 0; }
+#console-output code { display: block; color: #fff; }
+#console-form .form-control[disabled] { background: rgba(255,255,255,0.02); }
+
+
+

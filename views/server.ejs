@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Server - <%= serverName || serverId %> - <%= appName %></title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.4.0/purify.min.js"></script>
+</head>
+<body>
+  <main class="container py-4">
+    <div class="dashboard-layout">
+      <aside class="sidebar">
+        <div class="card h-100 border-0 bg-transparent">
+          <div class="card-body p-0 d-flex flex-column" style="gap:0.25rem">
+            <div class="app-title w-100 py-3">
+              <h3 class="h5 text-center text-white mb-0"><%= appName %></h3>
+            </div>
+
+            <!-- Back to servers and divider -->
+            <nav class="nav flex-column w-100" id="global-nav-server">
+              <a class="nav-link d-flex align-items-center" href="/"><i class="bi bi-hdd-stack me-2"></i>Servers</a>
+            </nav>
+            <hr class="sidebar-divider my-0">
+
+            <div class="mb-2 server-name"> <%= serverName || serverId %> </div>
+
+            <nav class="nav flex-column w-100 px-1" id="server-nav"> 
+              <a class="nav-link d-flex align-items-center" href="/server/<%= serverId %>#console"><i class="bi bi-terminal-fill me-2"></i>Console</a>
+              <a class="nav-link d-flex align-items-center" href="/server/<%= serverId %>#files"><i class="bi bi-folder-fill me-2"></i>Files</a>
+              <a class="nav-link d-flex align-items-center" href="/server/<%= serverId %>#databases"><i class="bi bi-database-fill me-2"></i>Databases</a>
+              <a class="nav-link d-flex align-items-center" href="/server/<%= serverId %>#users"><i class="bi bi-people-fill me-2"></i>Users</a>
+              <a class="nav-link d-flex align-items-center" href="/server/<%= serverId %>#backups"><i class="bi bi-cloud-upload-fill me-2"></i>Backups</a>
+              <a class="nav-link d-flex align-items-center" href="/server/<%= serverId %>#network"><i class="bi bi-diagram-3-fill me-2"></i>Network</a>
+              <a class="nav-link d-flex align-items-center" href="/server/<%= serverId %>#startup"><i class="bi bi-lightning-fill me-2"></i>Startup</a>
+              <a class="nav-link d-flex align-items-center" href="/server/<%= serverId %>#settings"><i class="bi bi-gear-fill me-2"></i>Settings</a>
+              <a class="nav-link d-flex align-items-center" href="/server/<%= serverId %>#activity"><i class="bi bi-activity me-2"></i>Activity</a>
+            </nav>
+
+            <div style="flex:1"></div>
+          </div>
+        </div>
+      </aside>
+
+      <section class="main-content">
+        <div id="server-main">
+          <h2 class="h5 mb-3">Console</h2>
+
+          <div id="server-console" class="mb-3">
+            <div class="d-flex justify-content-center py-5" id="console-loading">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+            <div id="console-area" class="d-none">
+              <div class="card">
+                <div class="card-body">
+                  <p class="small text-body-secondary">Console connected. Live output:</p>
+                  <div id="console-output" class="bg-dark text-white p-2 rounded-1"></div>
+
+                  <!-- Command bar -->
+                  <form id="console-form" class="mt-3 d-flex gap-2">
+                    <input id="console-input" class="form-control form-control-sm" type="text" placeholder="Type command and press Enter" aria-label="Console command" autocomplete="off" disabled />
+                    <button id="console-send" class="btn btn-sm btn-primary" type="submit" disabled>Send</button>
+                  </form>
+                  <div id="console-note" class="form-text small text-muted mt-1">Authenticate to enable sending commands.</div>
+                </div>
+              </div>
+            </div>
+            <div id="console-error" class="d-none">
+              <div class="alert alert-danger">Could not establish console connection.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    // Fetch server overview fragment
+    (function(){
+      const serverId = '<%= serverId %>';
+
+      // Get a console token, then connect to server websocket proxy and authenticate
+      (function connectConsole(){
+        fetch(`/api/server/${serverId}/console`).then(r => r.json()).then(payload => {
+          if (!payload?.success || !payload?.token) {
+            document.getElementById('console-loading').classList.add('d-none');
+            document.getElementById('console-error').classList.remove('d-none');
+            return;
+          }
+
+          const token = payload.token;
+          const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+          const url = `${proto}//${location.host}/ws/server/${serverId}`;
+          const ws = new WebSocket(url);
+          const out = document.getElementById('console-output');
+
+          // Command UI elements
+          const form = document.getElementById('console-form');
+          const input = document.getElementById('console-input');
+          const sendBtn = document.getElementById('console-send');
+          let isAuthenticated = false;
+          let firstMessageSeen = false;
+
+          ws.addEventListener('open', () => {
+            // send auth with token to proxy
+            ws.send(JSON.stringify({ event: 'auth', args: [token] }));
+
+            // Request logs immediately after opening (node may stream them)
+            try { ws.send(JSON.stringify({ event: 'send logs', args: [null] })); } catch (e) { console.warn('Failed to request logs', e); }
+          });
+
+          ws.addEventListener('message', async (ev) => {
+            // Accept string or binary (Blob/ArrayBuffer) frames
+            const raw = ev.data;
+            try {
+              console.log('Client WS message received', { rawPreview: (typeof raw === 'string' ? raw.slice(0,200) : '<binary>'), length: (typeof raw === 'string' ? raw.length : null) });
+            } catch (e) {}
+
+            let text = null;
+            if (typeof raw === 'string') {
+              text = raw;
+            } else if (typeof Blob !== 'undefined' && raw instanceof Blob) {
+              try { text = await raw.text(); } catch (e) { text = null; }
+            } else if (raw instanceof ArrayBuffer) {
+              try { text = new TextDecoder().decode(raw); } catch (e) { text = null; }
+            } else if (ArrayBuffer.isView && ArrayBuffer.isView(raw)) {
+              try { text = new TextDecoder().decode(raw.buffer); } catch (e) { text = null; }
+            }
+
+            let parsed = null;
+            if (text) {
+              try { parsed = JSON.parse(text); } catch (e) { parsed = null; }
+            }
+
+            // If it's a structured console output event, render it
+            if (parsed && parsed.event === 'console output' && Array.isArray(parsed.args)) {
+              const t = parsed.args.join(' ');
+
+              // If we receive logs but haven't yet been marked authenticated, enable the command bar
+              if (!isAuthenticated) {
+                isAuthenticated = true;
+                input.disabled = false;
+                sendBtn.disabled = false;
+                document.getElementById('console-note').textContent = 'Console output received — command bar enabled.';
+              }
+
+              // mark first real message seen and reveal console area
+              if (!firstMessageSeen) {
+                firstMessageSeen = true;
+                console.log('Client: first console output received, enabling command bar');
+                const loadEl = document.getElementById('console-loading');
+                const areaEl = document.getElementById('console-area');
+                if (loadEl) { loadEl.classList.add('d-none'); console.log('Client: hid loading element'); }
+                if (areaEl) { areaEl.classList.remove('d-none'); console.log('Client: showed console area'); }
+              }
+
+              // Debug log rendering
+              try { console.log('Client: rendering console output (preview)', t.slice(0,200)); } catch (e) {}
+
+              // Render console output in a sanitized code block
+              const pre = document.createElement('pre');
+              const code = document.createElement('code');
+              try {
+                const sanitized = DOMPurify.sanitize(String(t));
+                code.innerHTML = sanitized.replace(/\n/g, '<br/>');
+              } catch (e) {
+                code.textContent = String(t);
+              }
+              pre.appendChild(code);
+              out.appendChild(pre);
+              out.scrollTop = out.scrollHeight;
+
+              return; // done — do not render any other events
+            }
+
+            // Handle non-console events but do not render them to the terminal
+            if (parsed) {
+              if (parsed.event === 'status') {
+                document.getElementById('console-note').textContent = `Status: ${parsed.args?.[0] || ''}`;
+              } else if (parsed.event === 'auth success') {
+                isAuthenticated = true;
+                input.disabled = false;
+                sendBtn.disabled = false;
+                document.getElementById('console-note').textContent = 'Authenticated — you can send commands.';
+                console.log('Client: auth success received');
+
+                // reveal the console area on auth success if it's still hidden
+                if (!firstMessageSeen) {
+                  firstMessageSeen = true;
+                  const loadEl = document.getElementById('console-loading');
+                  const areaEl = document.getElementById('console-area');
+                  if (loadEl) { loadEl.classList.add('d-none'); console.log('Client: hid loading element (auth)'); }
+                  if (areaEl) { areaEl.classList.remove('d-none'); console.log('Client: showed console area (auth)'); }
+                }
+
+              } else if (parsed.event === 'token refreshed') {
+                document.getElementById('console-note').textContent = 'Token refreshed.';
+              } else if (parsed.event === 'error') {
+                document.getElementById('console-note').textContent = `Error: ${parsed.args?.[0] || ''}`;
+              }
+            }
+
+            // Ignore raw or other messages — only console output appears in terminal
+          });
+
+          ws.addEventListener('close', () => {
+            document.getElementById('console-error').classList.remove('d-none');
+            input.disabled = true;
+            sendBtn.disabled = true;
+            document.getElementById('console-note').textContent = 'Disconnected.';
+          });
+
+          ws.addEventListener('error', () => {
+            document.getElementById('console-loading').classList.add('d-none');
+            document.getElementById('console-error').classList.remove('d-none');
+            input.disabled = true;
+            sendBtn.disabled = true;
+            document.getElementById('console-note').textContent = 'Connection error.';
+          });
+
+          // Command submit handler
+          form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const cmd = input.value.trim();
+            if (!cmd) return;
+            if (ws && ws.readyState === WebSocket.OPEN && isAuthenticated) {
+              ws.send(JSON.stringify({ event: 'send command', args: [cmd] }));
+              // Show the command locally for feedback
+              const echo = document.createElement('div');
+              echo.textContent = `> ${cmd}`;
+              echo.className = 'text-muted small';
+              out.appendChild(echo);
+              out.scrollTop = out.scrollHeight;
+              input.value = '';
+            } else {
+              // Not authenticated or not ready
+              document.getElementById('console-note').textContent = 'Not connected or not authenticated.';
+            }
+          });
+        }).catch(() => {
+          document.getElementById('console-loading').classList.add('d-none');
+          document.getElementById('console-error').classList.remove('d-none');
+        });
+      })();
+
+
+      // On load, if hash targets a tab, jump to it
+      if (location.hash) {
+        const id = location.hash.replace(/^#/, '');
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView();
+      }
+    })();
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

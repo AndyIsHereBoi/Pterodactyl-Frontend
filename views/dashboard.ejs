@@ -6,45 +6,234 @@
   <title>Dashboard - <%= appName %></title>
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <link rel="stylesheet" href="/style.css">
   <!-- htmx -->
   <script src="https://unpkg.com/htmx.org@1.9.2"></script>
 </head>
 <body>
-  <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
-    <div class="container">
-      <a class="navbar-brand" href="/dashboard.html"><%= appName %></a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav me-auto">
-          <li class="nav-item">
-            <a class="nav-link active" href="/dashboard.html">Servers</a>
-          </li>
-        </ul>
-        <ul class="navbar-nav">
-          <li class="nav-item">
-            <a class="nav-link" href="/login.html">Logout</a>
-          </li>
-        </ul>
-      </div>
-    </div>
-  </nav>
-
   <main class="container py-4">
-    <h1 class="h3 mb-4">Your Servers</h1>
+    <div class="dashboard-layout">
+      <aside class="sidebar">
+        <div class="card h-100 border-0 bg-transparent">
+          <div class="card-body p-0 d-flex flex-column" style="gap:0.25rem">
+            <!-- Title centered and larger -->
+            <div class="app-title w-100 py-3">
+              <h3 class="h5 text-center text-white mb-0"><%= appName %></h3>
+            </div>
 
-    <div id="servers-list" hx-get="/api/servers" hx-trigger="load" hx-swap="innerHTML">
-      <div class="d-flex justify-content-center py-5">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading...</span>
+            <!-- Global nav: shows only Servers when not on a server -->
+            <nav class="nav flex-column w-100" id="global-nav">
+              <a class="nav-link d-flex align-items-center" href="/"><i class="bi bi-hdd-stack me-2"></i>Servers</a>
+            </nav>
+            <hr class="sidebar-divider my-0">
+
+            <!-- Server-specific nav (hidden by default) -->
+            <nav class="nav flex-column w-100 d-none" id="server-nav">
+              <div class="mb-2 fw-bold text-white" id="sidebar-server-name"></div>
+              <a class="nav-link d-flex align-items-center" href="#console"><i class="bi bi-terminal-fill me-2"></i>Console</a>
+              <a class="nav-link d-flex align-items-center" href="#files"><i class="bi bi-folder-fill me-2"></i>Files</a>
+              <a class="nav-link d-flex align-items-center" href="#databases"><i class="bi bi-database-fill me-2"></i>Databases</a>
+              <a class="nav-link d-flex align-items-center" href="#users"><i class="bi bi-people-fill me-2"></i>Users</a>
+              <a class="nav-link d-flex align-items-center" href="#backups"><i class="bi bi-cloud-upload-fill me-2"></i>Backups</a>
+              <a class="nav-link d-flex align-items-center" href="#network"><i class="bi bi-diagram-3-fill me-2"></i>Network</a>
+              <a class="nav-link d-flex align-items-center" href="#startup"><i class="bi bi-lightning-fill me-2"></i>Startup</a>
+              <a class="nav-link d-flex align-items-center" href="#settings"><i class="bi bi-gear-fill me-2"></i>Settings</a>
+              <a class="nav-link d-flex align-items-center" href="#activity"><i class="bi bi-activity me-2"></i>Activity</a>
+            </nav>
+
+            <div style="flex:1"></div>
+          </div>
         </div>
-      </div>
+      </aside>
+
+      <section class="main-content">
+        <div id="tab-content">
+          <section id="servers" >
+            <h2 class="h5 mb-3">Servers</h2>
+
+            <div id="servers-list" hx-get="/api/servers" hx-trigger="load" hx-swap="innerHTML">
+              <div class="d-flex justify-content-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Tab placeholders for server views; hidden until a server is selected -->
+          <section id="overview" class="d-none">
+            <h2 class="h5">Overview</h2>
+
+            <div id="server-overview" class="mt-3">
+              <div class="alert alert-secondary">Select a server to view details.</div>
+            </div>
+          </section>
+
+          <section id="console" class="d-none">
+            <h2 class="h5">Console</h2>
+            <div class="alert alert-secondary">Console view placeholder</div>
+          </section>
+
+          <section id="files" class="d-none">
+            <h2 class="h5">Files</h2>
+            <div class="alert alert-secondary">File manager placeholder</div>
+          </section>
+
+          <section id="databases" class="d-none">
+            <h2 class="h5">Databases</h2>
+            <div class="alert alert-secondary">Databases placeholder</div>
+          </section>
+
+          <section id="backups" class="d-none">
+            <h2 class="h5">Backups</h2>
+            <div class="alert alert-secondary">Backups placeholder</div>
+          </section>
+
+          <section id="startup" class="d-none">
+            <h2 class="h5">Startup</h2>
+            <div class="alert alert-secondary">Startup placeholder</div>
+          </section>
+
+          <section id="network" class="d-none">
+            <h2 class="h5">Network</h2>
+            <div class="alert alert-secondary">Network placeholder</div>
+          </section>
+
+          <section id="users" class="d-none">
+            <h2 class="h5">Users</h2>
+            <div class="alert alert-secondary">Users placeholder</div>
+          </section>
+
+          <section id="settings" class="d-none">
+            <h2 class="h5">Settings</h2>
+            <div class="alert alert-secondary">Settings placeholder</div>
+          </section>
+        </div>
+      </section>
     </div>
   </main>
 
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Simple client-side tab handling for dashboard sidebar
+    (function(){
+      const links = document.querySelectorAll('.sidebar .nav-link');
+      const sections = document.querySelectorAll('#tab-content section');
+
+      function showSection(id) {
+        sections.forEach(s => {
+          if (s.id === id) s.classList.remove('d-none'); else s.classList.add('d-none');
+        });
+        links.forEach(l => {
+          if (l.getAttribute('href') === '#'+id) l.classList.add('active'); else l.classList.remove('active');
+        });
+        // Scroll to top of content area
+        document.querySelector('.main-content').scrollIntoView({behavior: 'smooth'});
+      }
+
+      links.forEach(link => {
+        link.addEventListener('click', function(e){
+          e.preventDefault();
+          const href = this.getAttribute('href');
+          if (!href || !href.startsWith('#')) return;
+          const id = href.slice(1);
+          showSection(id);
+          // Update URL hash without jumping
+          history.replaceState(null, '', '#'+id);
+        });
+      });
+
+      // If there's a hash on load, open that tab
+      if (location.hash) {
+        const id = location.hash.slice(1);
+        const valid = Array.from(sections).some(s => s.id === id);
+        if (valid) showSection(id);
+      }
+    
+      // Handle hash routing and server selection
+      (function(){
+        const links = document.querySelectorAll('.sidebar .nav-link');
+        const sections = document.querySelectorAll('#tab-content section');
+        const globalNav = document.getElementById('global-nav');
+        const serverNav = document.getElementById('server-nav');
+        const sidebarServerName = document.getElementById('sidebar-server-name');
+
+        function showSection(id) {
+          sections.forEach(s => {
+            if (s.id === id) s.classList.remove('d-none'); else s.classList.add('d-none');
+          });
+          // highlight any link matching hash
+          links.forEach(l => {
+            const href = l.getAttribute('href');
+            if (href === '#'+id) l.classList.add('active'); else l.classList.remove('active');
+          });
+          document.querySelector('.main-content').scrollIntoView({behavior: 'smooth'});
+        }
+
+        function showServerPanel(id, name) {
+          globalNav.classList.add('d-none');
+          serverNav.classList.remove('d-none');
+          sidebarServerName.textContent = name || id;
+          // show overview by default
+          showSection('overview');
+          // load server overview via htmx (placeholder endpoint)
+          const overview = document.getElementById('server-overview');
+          overview.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
+          // Replace with actual endpoint when available
+          fetch(`/api/server/${id}/overview`).then(r => r.text()).then(html => { overview.innerHTML = html }).catch(()=>{ overview.innerHTML = '<div class="alert alert-secondary">No details available (configure API).</div>' });
+        }
+
+        function hideServerPanel() {
+          serverNav.classList.add('d-none');
+          globalNav.classList.remove('d-none');
+          // show servers list
+          showSection('servers');
+        }
+
+        function handleHash() {
+          const hash = location.hash || '';
+          const m = hash.match(/^#server-(.+)/);
+          if (m) {
+            const id = decodeURIComponent(m[1]);
+            // attempt to find server name from loaded cards
+            const card = document.querySelector(`[data-server-identifier="${CSS.escape(id)}"]`);
+            const name = card?.dataset?.serverName || id;
+            showServerPanel(id, name);
+          } else if (hash === '#servers' || hash === '' ) {
+            hideServerPanel();
+          } else {
+            // show section by hash if exists
+            const id = hash.replace(/^#/, '');
+            const exists = Array.from(sections).some(s => s.id === id);
+            if (exists) showSection(id);
+          }
+        }
+
+        window.addEventListener('hashchange', handleHash);
+
+        // initialize on load
+        document.addEventListener('DOMContentLoaded', function(){
+          // If we are on the home path, mark the Servers link active and show servers
+          if (location.pathname === '/') {
+            const sLink = document.querySelector('#global-nav a[href="/"]');
+            if (sLink) sLink.classList.add('active');
+            hideServerPanel();
+          }
+
+          handleHash();
+        });
+
+        // Also listen for clicks on server cards loaded via htmx (delegation)
+        document.addEventListener('click', function(e){
+          const a = e.target.closest('a[href^="#server-"]');
+          if (a) {
+            // allow default jump (hash change) to trigger handler
+            return;
+          }
+        });
+      })();
+  </script>
 </body>
 </html>
