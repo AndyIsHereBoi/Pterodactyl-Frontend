@@ -1,4 +1,5 @@
-# Node.js / Express standard .gitignore
+log.txt
+
 
 # Dependencies
 /node_modules/
