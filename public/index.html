@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pterodactyl Frontend (dev)</title>
+  <link rel="stylesheet" href="/style.css">
+  <!-- htmx for progressive enhancement -->
+  <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+</head>
+<body>
+  <main>
+    <h1>Pterodactyl Frontend (dev)</h1>
+    <p>This is a minimal dev server with <code>livereload</code> and <code>htmx</code>.</p>
+
+    <button hx-get="/api/health" hx-swap="outerHTML">Check API</button>
+
+    <div id="api-result"></div>
+  </main>
+
+  <!-- If connect-livereload doesn't inject the script, uncomment the following line for dev:
+  <script src="http://localhost:35729/livereload.js?snipver=1"></script>
+  -->
+</body>
+</html>
